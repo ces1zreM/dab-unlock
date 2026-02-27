@@ -21,13 +21,22 @@
         const videoElement = document.getElementsByClassName('input_video')[0];
         const output = document.getElementById('output');
 
-        // --- VÉRIFICATION DE LA MÉMOIRE ---
-        if (localStorage.getItem('dabDone') === 'true') {
+        // --- GESTION DE LA SESSION ---
+        // Si le dab a déjà été fait dans CETTE session, on redirige
+        if (sessionStorage.getItem('dabDone') === 'true') {
             window.location.href = "instagram://";
         }
 
-        const pose = new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`});
-        pose.setOptions({ modelComplexity: 1, minDetectionConfidence: 0.7 });
+        const pose = new Pose({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+        }});
+
+        pose.setOptions({
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+
         pose.onResults(onResults);
 
         const camera = new Camera(videoElement, {
@@ -46,12 +55,13 @@
             const isDabRight = Math.hypot(nose.x - leftElbow.x, nose.y - leftElbow.y) < 0.15 && Math.hypot(nose.x - rightWrist.x, nose.y - rightWrist.y) > 0.4;
 
             if (isDabLeft || isDabRight) {
-                output.innerHTML = "✅ DAB !";
+                output.innerHTML = "✅ DAB ! Redirection...";
                 output.style.color = "green";
                 
-                // --- MARQUER LE DAB COMME FAIT ---
-                localStorage.setItem('dabDone', 'true');
+                // --- MARQUER LE DAB DANS LA SESSION ---
+                sessionStorage.setItem('dabDone', 'true');
                 
+                // Redirection après 1 seconde
                 setTimeout(() => {
                     window.location.href = "instagram://";
                 }, 1000);
