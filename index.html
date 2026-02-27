@@ -21,12 +21,6 @@
         const videoElement = document.getElementsByClassName('input_video')[0];
         const output = document.getElementById('output');
 
-        // --- GESTION DE LA SESSION ---
-        // Si le dab a déjà été fait dans CETTE session, on redirige
-        if (sessionStorage.getItem('dabDone') === 'true') {
-            window.location.href = "instagram://";
-        }
-
         const pose = new Pose({locateFile: (file) => {
             return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
         }});
@@ -58,12 +52,13 @@
                 output.innerHTML = "✅ DAB ! Redirection...";
                 output.style.color = "green";
                 
-                // --- MARQUER LE DAB DANS LA SESSION ---
-                sessionStorage.setItem('dabDone', 'true');
-                
-                // Redirection après 1 seconde
+                // --- REDIRECTION ET FERMETURE ---
                 setTimeout(() => {
                     window.location.href = "instagram://";
+                    // Tente de fermer l'onglet après la redirection
+                    setTimeout(() => {
+                        window.close();
+                    }, 500);
                 }, 1000);
             }
         }
