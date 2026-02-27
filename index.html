@@ -21,11 +21,11 @@
         const videoElement = document.getElementsByClassName('input_video')[0];
         const output = document.getElementById('output');
 
-        // --- GESTION DE LA MÉMOIRE (Cookie) ---
-        // Vérifie si on a déjà dabé dans les 5 dernières minutes
-        const hasDabbed = localStorage.getItem('hasDabbed');
+        // --- GESTION DE LA MÉMOIRE (Session) ---
+        // Vérifie si on a déjà dabé dans la session actuelle
+        const hasDabbed = sessionStorage.getItem('hasDabbed');
         if (hasDabbed) {
-            output.innerHTML = "Dab déjà fait ! Redirection...";
+            output.innerHTML = "Déjà fait ! Redirection...";
             window.location.href = "instagram://";
         }
 
@@ -57,11 +57,11 @@
             const isDabRight = Math.hypot(nose.x - leftElbow.x, nose.y - leftElbow.y) < 0.15 && Math.hypot(nose.x - rightWrist.x, nose.y - rightWrist.y) > 0.4;
 
             if (isDabLeft || isDabRight) {
-                output.innerHTML = "✅ DAB !";
+                output.innerHTML = "✅ DAB DÉTECTÉ !";
                 output.style.color = "green";
                 
-                // --- SAUVEGARDER LE DAB ---
-                localStorage.setItem('hasDabbed', 'true');
+                // --- SAUVEGARDER LE DAB DANS LA SESSION ---
+                sessionStorage.setItem('hasDabbed', 'true');
                 
                 setTimeout(() => {
                     window.location.href = "instagram://";
