@@ -1,33 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dab Gate Test</title>
+    <title>Dab Gate</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
     <style>
         body { text-align: center; font-family: sans-serif; background-color: #222; color: white; }
-        /* AFFICHER LA VIDÉO : On enlève le "display: none" */
-        video { 
-            width: 90%; 
-            max-width: 400px; 
-            border: 5px solid white;
-            border-radius: 10px;
-        }
+        video { width: 90%; max-width: 400px; border: 5px solid white; border-radius: 10px; }
         #output { font-size: 24px; font-weight: bold; color: red; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>🔒 DAB GATE TEST 🔒</h1>
-    <p>Cadrez-vous bien et faites un Dab !</p>
-    
+    <h1>🔒 DAB GATE 🔒</h1>
+    <p>Fais un Dab pour accéder à Insta !</p>
     <video class="input_video" autoplay playsinline></video>
-    
     <div id="output">Initialisation...</div>
 
     <script type="module">
         const videoElement = document.getElementsByClassName('input_video')[0];
         const output = document.getElementById('output');
+
+        // --- GESTION DE LA MÉMOIRE (Cookie) ---
+        // Vérifie si on a déjà dabé dans les 5 dernières minutes
+        const hasDabbed = localStorage.getItem('hasDabbed');
+        if (hasDabbed) {
+            output.innerHTML = "Dab déjà fait ! Redirection...";
+            window.location.href = "instagram://";
+        }
 
         const pose = new Pose({locateFile: (file) => {
             return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
@@ -35,7 +35,6 @@
 
         pose.setOptions({
             modelComplexity: 1,
-            smoothLandmarks: true,
             minDetectionConfidence: 0.7,
             minTrackingConfidence: 0.7
         });
@@ -43,46 +42,30 @@
         pose.onResults(onResults);
 
         const camera = new Camera(videoElement, {
-            onFrame: async () => {
-                await pose.send({image: videoElement});
-            },
-            width: 640,
-            height: 480
+            onFrame: async () => { await pose.send({image: videoElement}); },
+            width: 640, height: 480
         });
         camera.start();
 
         function onResults(results) {
-            if (!results.poseLandmarks) {
-                output.innerHTML = "Personne détectée...";
-                return;
-            }
-            
+            if (!results.poseLandmarks) return;
             const lm = results.poseLandmarks;
-            const nose = lm[0];
-            const leftElbow = lm[13];
-            const rightElbow = lm[14];
-            const leftWrist = lm[15];
-            const rightWrist = lm[16];
+            const nose = lm[0], leftElbow = lm[13], rightElbow = lm[14];
+            const leftWrist = lm[15], rightWrist = lm[16];
 
-            const distNoseL = Math.hypot(nose.x - leftElbow.x, nose.y - leftElbow.y);
-            const distNoseR = Math.hypot(nose.x - rightElbow.x, nose.y - rightElbow.y);
-            const distNoseWristL = Math.hypot(nose.x - leftWrist.x, nose.y - leftWrist.y);
-            const distNoseWristR = Math.hypot(nose.x - rightWrist.x, nose.y - rightWrist.y);
-
-            const isDabLeft = distNoseR < 0.15 && distNoseWristL > 0.4;
-            const isDabRight = distNoseL < 0.15 && distNoseWristR > 0.4;
+            const isDabLeft = Math.hypot(nose.x - rightElbow.x, nose.y - rightElbow.y) < 0.15 && Math.hypot(nose.x - leftWrist.x, nose.y - leftWrist.y) > 0.4;
+            const isDabRight = Math.hypot(nose.x - leftElbow.x, nose.y - leftElbow.y) < 0.15 && Math.hypot(nose.x - rightWrist.x, nose.y - rightWrist.y) > 0.4;
 
             if (isDabLeft || isDabRight) {
-                output.innerHTML = "✅ DAB DÉTECTÉ !";
+                output.innerHTML = "✅ DAB !";
                 output.style.color = "green";
                 
-                // Redirection
+                // --- SAUVEGARDER LE DAB ---
+                localStorage.setItem('hasDabbed', 'true');
+                
                 setTimeout(() => {
                     window.location.href = "instagram://";
                 }, 1000);
-            } else {
-                output.innerHTML = "❌ FAIS UN DAB !";
-                output.style.color = "red";
             }
         }
     </script>
