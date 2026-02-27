@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dab Gate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <style>
+        body { text-align: center; font-family: sans-serif; background-color: #f0f0f0; }
+        #output { font-size: 24px; font-weight: bold; color: red; margin-top: 20px; }
+        video { display: none; }
+        h1 { margin-top: 50px; }
+    </style>
+</head>
+<body>
+    <h1>🔒 DAB GATE 🔒</h1>
+    <p>Pour ouvrir Instagram, fais un Dab devant la caméra.</p>
+    <video class="input_video"></video>
+    <div id="output">Initialisation caméra...</div>
+
+    <script type="module">
+        const videoElement = document.getElementsByClassName('input_video')[0];
+        const output = document.getElementById('output');
+
+        // Configuration de MediaPipe Pose
+        const pose = new Pose({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+        }});
+
+        pose.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+
+        pose.onResults(onResults);
+
+        // Configuration de la caméra
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await pose.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+        camera.start();
+
+        function onResults(results) {
+            if (!results.poseLandmarks) {
+                output.innerHTML = "Personne détectée...";
+                return;
+            }
+
+            const lm = results.poseLandmarks;
+
+            // Points clés : 0=Nez, 13=Coude G, 14=Coude D, 15=Poignet G, 16=Poignet D
+            const nose = lm[0];
+            const leftElbow = lm[13];
+            const rightElbow = lm[14];
+            const leftWrist = lm[15];
+            const rightWrist = lm[16];
+
+            // --- Logique du Dab ---
+
+            // Distance Nez-Coude (bras plié)
+            const distNoseL = Math.hypot(nose.x - leftElbow.x, nose.y - leftElbow.y);
+            const distNoseR = Math.hypot(nose.x - rightElbow.x, nose.y - rightElbow.y);
+
+            // Distance Nez-Poignet (bras tendu)
+            const distNoseWristL = Math.hypot(nose.x - leftWrist.x, nose.y - leftWrist.y);
+            const distNoseWristR = Math.hypot(nose.x - rightWrist.x, nose.y - rightWrist.y);
+
+            // Condition : Un coude proche du nez ET l'autre poignet loin du nez
+            const isDabLeft = distNoseR < 0.15 && distNoseWristL > 0.4;
+            const isDabRight = distNoseL < 0.15 && distNoseWristR > 0.4;
+
+            if (isDabLeft || isDabRight) {
+                output.innerHTML = "✅ DAB DÉTECTÉ ! OUVERTURE INSTA...";
+                output.style.color = "green";
+
+                // Redirection vers Instagram
+                setTimeout(() => {
+                    window.location.href = "instagram://";
+                }, 1000);
+            } else {
+                output.innerHTML = "❌ FAIS UN DAB !";
+                output.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
